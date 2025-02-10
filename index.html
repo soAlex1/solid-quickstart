@@ -12,16 +12,39 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            background: #2c3e50;
             color: white;
             flex-direction: column;
             text-align: center;
+            animation: fadeInBody 1s ease-in-out;
         }
+        @keyframes fadeInBody {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
         h1 {
-            font-size: 2.5em;
+            font-size: 3em;
             margin-bottom: 20px;
             font-weight: 600;
+            color: white;
+            animation: fadeInTitle 2s ease-in-out;
         }
+        @keyframes fadeInTitle {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .board {
             display: grid;
             grid-template-columns: repeat(3, 120px);
@@ -31,56 +54,118 @@
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            animation: fadeInBoard 2s ease-in-out;
         }
+        @keyframes fadeInBoard {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
         .cell {
             width: 120px;
             height: 120px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 3em;
+            font-size: 4em;
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             cursor: pointer;
             transition: background 0.3s ease, transform 0.1s;
+            animation: fadeInCell 1s ease-in-out;
         }
+        @keyframes fadeInCell {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
         .cell:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
+
         .winner {
             background: rgba(46, 204, 113, 0.7) !important;
             color: #fff;
         }
+
         .reset-btn {
             margin-top: 20px;
             padding: 12px 24px;
-            font-size: 1.2em;
+            font-size: 1.5em;
             font-weight: bold;
             background: #e74c3c;
             border: none;
             color: white;
             border-radius: 8px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: transform 0.3s, background 0.3s;
+            animation: fadeInResetButton 1.5s ease-in-out;
         }
+        @keyframes fadeInResetButton {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
         .reset-btn:hover {
             background: #c0392b;
+            transform: scale(1.1);
         }
+
+        .reset-btn:active {
+            transform: scale(1);
+        }
+
+        .reset-animation {
+            animation: resetAnimation 1s ease forwards;
+        }
+        @keyframes resetAnimation {
+            0% {
+                transform: scale(1.1);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Win screen simplified design */
         .winner-popup {
+            font-size: 2em;
+            font-weight: 600;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+            display: none;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px 40px;
-            border-radius: 10px;
-            color: white;
-            font-size: 2em;
-            font-weight: bold;
-            display: none;
+            z-index: 999;
         }
+
         .overlay {
             position: fixed;
             top: 0;
@@ -90,23 +175,32 @@
             background: rgba(0, 0, 0, 0.5);
             display: none;
         }
+
+        .overlay.active {
+            display: block;
+        }
+
     </style>
 </head>
 <body>
     <h1>Noughts and Crosses</h1>
     <div class="board" id="board"></div>
-    <button class="reset-btn" onclick="resetGame()">Restart</button>
+    <button class="reset-btn" id="reset-btn" onclick="resetGame()">Restart</button>
     <div class="overlay" id="overlay"></div>
-    <div class="winner-popup" id="winner-popup"></div>
-    
+    <div class="winner-popup" id="winner-popup">
+        <h2 id="winner-text"></h2>
+    </div>
+
     <script>
         const board = document.getElementById("board");
         const winnerPopup = document.getElementById("winner-popup");
+        const winnerText = document.getElementById("winner-text");
         const overlay = document.getElementById("overlay");
+        const resetButton = document.getElementById("reset-btn");
         let cells = [];
         let currentPlayer = "X";
         let gameBoard = Array(9).fill(null);
-        
+
         function createBoard() {
             board.innerHTML = "";
             cells = [];
@@ -119,7 +213,7 @@
                 cells.push(cell);
             }
         }
-        
+
         function makeMove(index) {
             if (!gameBoard[index]) {
                 gameBoard[index] = currentPlayer;
@@ -128,14 +222,14 @@
                 currentPlayer = currentPlayer === "X" ? "O" : "X";
             }
         }
-        
+
         function checkWin() {
             const winPatterns = [
                 [0, 1, 2], [3, 4, 5], [6, 7, 8],
                 [0, 3, 6], [1, 4, 7], [2, 5, 8],
                 [0, 4, 8], [2, 4, 6]
             ];
-            
+
             for (let pattern of winPatterns) {
                 const [a, b, c] = pattern;
                 if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
@@ -146,27 +240,29 @@
             }
             return false;
         }
-        
+
         function showWinner(player) {
-            winnerPopup.textContent = `${player} Wins!`;
+            winnerText.textContent = `${player} Wins!`;
             winnerPopup.style.display = "block";
-            overlay.style.display = "block";
+            overlay.classList.add("active");
             setTimeout(() => {
                 winnerPopup.style.display = "none";
-                overlay.style.display = "none";
+                overlay.classList.remove("active");
                 resetGame();
-            }, 2000);
+            }, 3000); // Keep win screen for 3 seconds before resetting
         }
-        
+
         function resetGame() {
             gameBoard.fill(null);
             currentPlayer = "X";
             cells.forEach(cell => {
                 cell.textContent = "";
                 cell.classList.remove("winner");
+                cell.classList.add("reset-animation"); // Add reset animation for the cells
             });
+            resetButton.classList.add("reset-animation"); // Reset button animation
         }
-        
+
         createBoard();
     </script>
 </body>
